@@ -1,21 +1,16 @@
+# To run:
+# streamlit run 01_Transcribe.py
+
 import streamlit as st
 
 from transcriber import Transcription
 
-# Set app wide config
 st.set_page_config(
-    page_title="Transcribe | Whisper UI",
-    page_icon="🤖",
+    page_title="Transcription System",
+    page_icon="🧐",
     layout="wide",
-    menu_items={
-        "Get Help": "https://twitter.com/hayabhay",
-        "Report a bug": "https://github.com/hayabhay/whisper-ui/issues",
-        "About": """This is a simple GUI for OpenAI's Whisper.
-        Please report any bugs or issues on [Github](https://github.com/hayabhay/whisper-ui/). Thanks!""",
-    },
 )
 
-# Render input type selection on the sidebar & the form
 input_type = st.sidebar.selectbox("Input Type", ["YouTube", "Link", "File"])
 
 with st.sidebar.form("input_form"):
@@ -24,28 +19,25 @@ with st.sidebar.form("input_form"):
     if input_type == "Link":
         url = st.text_input("URL (video works fine)")
     elif input_type == "File":
-        input_file = st.file_uploader("File", type=["mp4", "avi", "mov", "mkv", "mp3", "wav"])
+        input_file = st.file_uploader("Please upload a valid video file", type=["mp4", "avi", "mov", "mkv", "mp3", "wav"])
 
-    # Create two options. Either Youtube or a local file
-    name = st.text_input("Audio/Video Name", "some_cool_media")
+    name = st.text_input("Audio/Video Name", "some_name")
 
     start = st.number_input("Start time for the media (sec)", min_value=0.0, step=1.0)
     duration = st.number_input("Duration (sec) - negative implies till the end", min_value=-1.0, step=1.0)
 
-    whisper_model = st.selectbox("Whisper model", options=["tiny", "base", "small", "medium", "large"], index=1)
+    whisper_model = st.selectbox("Whisper model (accuracy)", options=["tiny", "base", "small", "medium", "large"], index=1)
     extra_configs = st.expander("Extra Configs")
     with extra_configs:
         temperature = st.number_input("Temperature", min_value=0.0, max_value=1.0, value=0.0, step=0.1)
-        temperature_increment_on_fallback = st.number_input(
-            "Temperature Increment on Fallback", min_value=0.0, max_value=1.0, value=0.2, step=0.2
-        )
         no_speech_threshold = st.slider("No Speech Threshold", min_value=0.0, max_value=1.0, value=0.6, step=0.05)
-        logprob_threshold = st.slider("Logprob Threshold", min_value=-20.0, max_value=0.0, value=-1.0, step=0.1)
-        compression_ratio_threshold = st.slider(
-            "Compression Ratio Threshold", min_value=0.0, max_value=10.0, value=2.4, step=0.1
-        )
         condition_on_previous_text = st.checkbox("Condition on previous text", value=True)
     transcribe = st.form_submit_button(label="Transcribe!")
+
+    temperature_increment_on_fallback = 0.2
+    no_speech_threshold = 0.6
+    logprob_threshold = -1.0
+    compression_ratio_threshold = 2.4
 
 if transcribe:
     if not name:
@@ -67,7 +59,7 @@ if transcribe:
         else:
             st.error("Please upload a file")
 
-    # Transcribe on click
+    
     st.session_state.transcription.transcribe(
         whisper_model,
         temperature,
@@ -109,5 +101,5 @@ if "transcription" in st.session_state:
         media_col.markdown("#### Original YouTube Video")
         media_col.video(st.session_state.transcription.source)
 else:
-    with open("instructions.md", "r") as f:
+    with open("About.md", "r") as f:
         st.write(f.read())

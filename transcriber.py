@@ -25,22 +25,15 @@ class Transcription:
         self.save_dir = LOCAL_DIR / self.name
 
         if self.source_type == "youtube":
-            # TODO: Perhaps this can be stored in a file-like object in memory
-            # itag = 140 is the audio only version
-            # TODO: Skip handling extensions
             YouTube(self.source).streams.get_by_itag(140).download(self.save_dir, filename="audio")
         elif self.source_type == "link":
             r = requests.get(self.source, allow_redirects=True)
             with open(self.save_dir / "audio", "wb") as f:
                 f.write(r.content)
         elif self.source_type == "file":
-            # TODO: Check if ffmpeg can read directly from a file-like in memory container
-            # For now, re-save it to the local directory
             with open(self.save_dir / "audio", "wb") as f:
                 f.write(self.source.read())
 
-        # Crop the audio as needed
-        # Load the audio file. Python-ffmpeg is poorly documented so unsure how to cleanly do this but this works
         if duration > 0:
             audio = ffmpeg.input(f"{self.save_dir}/audio", ss=start, t=duration)
         else:
@@ -65,11 +58,8 @@ class Transcription:
         keep_model_in_memory: bool = True,
     ):
 
-        # Get whisper model
-        # NOTE: If mulitple models are selected, this may keep all of them in memory depending on the cache size
         transcriber = whisper.load_model(whisper_model)
 
-        # Set configs & transcribe
         if temperature_increment_on_fallback is not None:
             temperature = tuple(np.arange(temperature, 1.0 + 1e-6, temperature_increment_on_fallback))
         else:
@@ -104,7 +94,6 @@ class Transcription:
         if not self.transcribed:
             raise Exception("Transcription not yet done")
 
-        # TODO: Validate model name & handle errors
         summarizer = pipeline("summarization", model=model)
 
         self.summary = summarizer(self.text, min_length=min_length, max_length=max_length, do_sample=do_sample)[0][
